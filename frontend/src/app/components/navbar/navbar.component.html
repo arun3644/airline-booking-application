@@ -1,0 +1,9 @@
+<mat-toolbar color="primary">
+  <span style="flex: 1">Airline Booking</span>
+  <button mat-button routerLink="/flights">Flights</button>
+  <button mat-button *ngIf="isLoggedIn && role==='user'" routerLink="/bookings">My Bookings</button>
+  <button mat-button *ngIf="isLoggedIn && role==='admin'" routerLink="/flights/add">Add Flight</button>
+  <button mat-button *ngIf="!isLoggedIn" routerLink="/login">Login</button>
+  <button mat-button *ngIf="!isLoggedIn" routerLink="/signup">Signup</button>
+  <button mat-button *ngIf="isLoggedIn" (click)="logout()">Logout</button>
+</mat-toolbar>

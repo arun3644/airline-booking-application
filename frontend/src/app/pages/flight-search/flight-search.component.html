@@ -1,0 +1,18 @@
+<div class="search-container">
+  <h2>Search Flights</h2>
+  <form [formGroup]="searchForm" (ngSubmit)="search()">
+    <input placeholder="From" formControlName="from">
+    <input placeholder="To" formControlName="to">
+    <input type="date" formControlName="date">
+    <button type="submit">Search</button>
+  </form>
+  <p class="error" *ngIf="errorMsg">{{ errorMsg }}</p>
+
+  <div class="flights">
+    <app-flight-card
+      *ngFor="let flight of flights"
+      [flight]="flight"
+      (select)="selectFlight(flight)">
+    </app-flight-card>
+  </div>
+</div>

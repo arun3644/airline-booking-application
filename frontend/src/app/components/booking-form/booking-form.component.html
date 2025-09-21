@@ -1,0 +1,19 @@
+<form [formGroup]="passengersForm" (ngSubmit)="submit()">
+  <div formArrayName="passengers" *ngFor="let p of passengers.controls; let i=index" [formGroupName]="i">
+    <label>Name:</label>
+    <input formControlName="name" type="text" required>
+
+    <label>Age:</label>
+    <input formControlName="age" type="number" required>
+
+    <label>Seat Class:</label>
+    <select formControlName="seatClass">
+      <option value="Economy">Economy</option>
+      <option value="Business">Business</option>
+      <option value="First">First</option>
+    </select>
+  </div>
+
+  <button type="button" (click)="addPassenger()">Add Passenger</button>
+  <button type="submit">Book Flight</button>
+</form>

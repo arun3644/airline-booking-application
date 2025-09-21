@@ -1,0 +1,11 @@
+<div class="dashboard-container">
+  <h1>Admin Dashboard</h1>
+
+  <div class="error" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+  <h2>All Flights</h2>
+  <div *ngFor="let flight of flights" class="flight-item">
+    <app-flight-card [flight]="flight"></app-flight-card>
+    <button class="delete-btn" (click)="deleteFlight(flight._id)">Delete</button>
+  </div>
+</div>

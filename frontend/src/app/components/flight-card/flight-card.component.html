@@ -1,0 +1,8 @@
+<div class="flight-card">
+  <h3>{{ flight.airline }} - {{ flight.flightNumber }}</h3>
+  <p>{{ flight.origin }} → {{ flight.destination }}</p>
+  <p>Departure: {{ flight.departureTime }}</p>
+  <p>Arrival: {{ flight.arrivalTime }}</p>
+  <p>Price: {{ flight.price }}</p>
+  <button (click)="onSelect()">Select</button>
+</div>

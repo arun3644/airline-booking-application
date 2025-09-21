@@ -1,0 +1,28 @@
+.search-container {
+  max-width: 800px;
+  margin: 30px auto;
+}
+
+.search-container form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.search-container input {
+  flex: 1;
+  padding: 10px;
+}
+
+.search-container button {
+  padding: 10px 20px;
+  background-color: #3f51b5;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+.search-container button:hover { background-color: #303f9f; }
+
+.flights { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+.error { color: red; }

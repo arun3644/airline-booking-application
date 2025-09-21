@@ -1,0 +1,15 @@
+<div class="booking-container" *ngIf="selectedFlight">
+  <h2>Booking for {{ selectedFlight.airline }} - {{ selectedFlight.flightNumber }}</h2>
+  <p>{{ selectedFlight.origin }} → {{ selectedFlight.destination }}</p>
+  <p>Departure: {{ selectedFlight.departureTime }}</p>
+  <p>Arrival: {{ selectedFlight.arrivalTime }}</p>
+
+  <!-- your booking form component or reactive form goes here -->
+  
+  <p class="success" *ngIf="successMsg">{{ successMsg }}</p>
+  <p class="error" *ngIf="errorMsg">{{ errorMsg }}</p>
+</div>
+
+<div *ngIf="!selectedFlight">
+  <p>Please select a flight first from the search page.</p>
+</div>
