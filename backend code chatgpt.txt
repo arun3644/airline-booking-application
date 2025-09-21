@@ -1,0 +1,685 @@
+Great — I’ll proceed from that point and build a complete production-ready backend for you, including:
+
+JWT-based signup/login (with password hashing)
+
+Role-based access (admin vs user)
+
+Email confirmation after booking (using nodemailer)
+
+Clean folder-by-folder code you can drop into AirlineBookingApp/backend/
+
+.env example and exact commands to install & run
+
+I’m delivering the backend code now (all files you listed). After this you can run the server, test APIs, then I’ll deliver the Angular standalone frontend to connect to these APIs.
+
+✅ What I’ll add (backend)
+
+Files and their contents — place these under AirlineBookingApp/backend/ in the same folders you showed:
+
+package.json (with scripts)
+
+.env.example
+
+server.js
+
+config/db.js
+
+models/User.js, models/Flight.js, models/Booking.js
+
+utils/generateToken.js, utils/sendEmail.js, utils/validateInput.js
+
+middleware/authMiddleware.js, middleware/roleMiddleware.js, middleware/errorMiddleware.js
+
+controllers/authController.js, controllers/flightController.js, controllers/bookingController.js
+
+routes/authRoutes.js, routes/flightRoutes.js, routes/bookingRoutes.js
+
+Below are the contents. Copy each into the file with the same path.
+
+1) package.json
+{
+  "name": "airline-backend",
+  "version": "1.0.0",
+  "description": "Airline booking backend - Express + MongoDB",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "mongoose": "^7.0.0",
+    "nodemailer": "^6.9.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
+
+2) .env.example (create a file .env from this example)
+PORT=5000
+MONGO_URI=mongodb+srv://<username>:<password>@cluster0.abcde.mongodb.net/airlineDB?retryWrites=true&w=majority
+JWT_SECRET=your_jwt_secret_here
+JWT_EXPIRES_IN=7d
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=youremail@gmail.com
+EMAIL_PASS=your_email_app_password_or_smtp_pass
+FRONTEND_URL=http://localhost:4200
+
+
+Notes: If you use Gmail, create an App Password or enable SMTP appropriately. Do not push real credentials to git.
+
+3) server.js
+const express = require('express');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const connectDB = require('./config/db');
+const authRoutes = require('./routes/authRoutes');
+const flightRoutes = require('./routes/flightRoutes');
+const bookingRoutes = require('./routes/bookingRoutes');
+const { errorHandler } = require('./middleware/errorMiddleware');
+
+dotenv.config();
+connectDB();
+
+const app = express();
+app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
+app.use(express.json());
+
+// Health check
+app.get('/', (req, res) => res.send('Airline Booking API is running'));
+
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/flights', flightRoutes);
+app.use('/api/bookings', bookingRoutes);
+
+// Error handler (should be last)
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+4) config/db.js
+const mongoose = require('mongoose');
+
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      // options handled by mongoose >=6
+    });
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error('MongoDB connection error:', error.message);
+    process.exit(1);
+  }
+};
+
+module.exports = connectDB;
+
+5) models/User.js
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  password: { type: String, required: true },
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  createdAt: { type: Date, default: Date.now }
+});
+
+// Hash password before save
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+// Compare password method
+userSchema.methods.matchPassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
+
+module.exports = mongoose.model('User', userSchema);
+
+6) models/Flight.js
+const mongoose = require('mongoose');
+
+const flightSchema = new mongoose.Schema({
+  flightNumber: { type: String, required: true, unique: true },
+  airline: { type: String, required: true },
+  from: { type: String, required: true },
+  to: { type: String, required: true },
+  departureTime: { type: Date, required: true },
+  arrivalTime: { type: Date, required: true },
+  seats: { type: Number, required: true, default: 100 },
+  price: { type: Number, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('Flight', flightSchema);
+
+7) models/Booking.js
+const mongoose = require('mongoose');
+
+const bookingSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  flight: { type: mongoose.Schema.Types.ObjectId, ref: 'Flight', required: true },
+  passengers: {
+    type: [{ name: String, age: Number, seatClass: { type: String, default: 'Economy' } }],
+    required: true
+  },
+  totalPrice: { type: Number, required: true },
+  status: { type: String, enum: ['CONFIRMED','CANCELLED','PENDING'], default: 'CONFIRMED' },
+  createdAt: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('Booking', bookingSchema);
+
+8) utils/generateToken.js
+const jwt = require('jsonwebtoken');
+
+const generateToken = (user) => {
+  return jwt.sign(
+    { id: user._id, email: user.email, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+  );
+};
+
+module.exports = generateToken;
+
+9) utils/sendEmail.js
+const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: process.env.EMAIL_PORT || 587,
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+// sendMail({ to, subject, text, html })
+const sendMail = async ({ to, subject, text, html }) => {
+  const info = await transporter.sendMail({
+    from: `"Airline Booking" <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+    text,
+    html
+  });
+  return info;
+};
+
+module.exports = sendMail;
+
+
+Note: For Gmail use an App Password or configure less-secure apps (not recommended). For testing, you can use Mailtrap or Ethereal (nodemailer.createTestAccount).
+
+10) utils/validateInput.js
+// Basic validation helpers (expand as needed)
+const isEmail = (email) => {
+  const re = /\S+@\S+\.\S+/;
+  return re.test(email);
+};
+
+module.exports = { isEmail };
+
+11) middleware/errorMiddleware.js
+const errorHandler = (err, req, res, next) => {
+  console.error(err.stack);
+  const statusCode = res.statusCode && res.statusCode !== 200 ? res.statusCode : 500;
+  res.status(statusCode).json({
+    message: err.message || 'Server Error',
+    stack: process.env.NODE_ENV === 'production' ? null : err.stack
+  });
+};
+
+module.exports = { errorHandler };
+
+12) middleware/authMiddleware.js
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+
+const protect = async (req, res, next) => {
+  let token;
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  }
+  if (!token) {
+    res.status(401);
+    return next(new Error('Not authorized, no token'));
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decoded.id).select('-password');
+    if (!req.user) {
+      res.status(401);
+      throw new Error('User no longer exists');
+    }
+    next();
+  } catch (error) {
+    res.status(401);
+    next(new Error('Not authorized, token failed'));
+  }
+};
+
+module.exports = { protect };
+
+13) middleware/roleMiddleware.js
+// usage: permit('admin')
+const permit = (...allowedRoles) => {
+  return (req, res, next) => {
+    const user = req.user;
+    if (!user) {
+      res.status(401);
+      return next(new Error('Not authenticated'));
+    }
+    if (!allowedRoles.includes(user.role)) {
+      res.status(403);
+      return next(new Error('Forbidden: insufficient permissions'));
+    }
+    next();
+  };
+};
+
+module.exports = { permit };
+
+14) controllers/authController.js
+const User = require('../models/User');
+const generateToken = require('../utils/generateToken');
+const { isEmail } = require('../utils/validateInput');
+
+const register = async (req, res, next) => {
+  try {
+    const { name, email, password, role } = req.body;
+    if (!name || !email || !password) {
+      res.status(400);
+      throw new Error('Please provide name, email and password');
+    }
+    if (!isEmail(email)) {
+      res.status(400);
+      throw new Error('Invalid email');
+    }
+    const exists = await User.findOne({ email });
+    if (exists) {
+      res.status(400);
+      throw new Error('User already exists');
+    }
+    const user = await User.create({ name, email, password, role });
+    res.status(201).json({
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      token: generateToken(user)
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      res.status(400);
+      throw new Error('Please provide email and password');
+    }
+    const user = await User.findOne({ email });
+    if (!user) {
+      res.status(401);
+      throw new Error('Invalid credentials');
+    }
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) {
+      res.status(401);
+      throw new Error('Invalid credentials');
+    }
+    res.json({
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      token: generateToken(user)
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { register, login };
+
+15) controllers/flightController.js
+const Flight = require('../models/Flight');
+
+// Create flight (admin)
+const createFlight = async (req, res, next) => {
+  try {
+    const { flightNumber, airline, from, to, departureTime, arrivalTime, seats, price } = req.body;
+    if (!flightNumber || !airline || !from || !to || !departureTime || !arrivalTime || !price) {
+      res.status(400);
+      throw new Error('Missing required fields');
+    }
+    const exists = await Flight.findOne({ flightNumber });
+    if (exists) {
+      res.status(400);
+      throw new Error('Flight number already exists');
+    }
+    const flight = await Flight.create({
+      flightNumber, airline, from, to, departureTime, arrivalTime, seats: seats || 100, price
+    });
+    res.status(201).json(flight);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// List flights (public)
+const listFlights = async (req, res, next) => {
+  try {
+    // Add filtering by from/to/date/price if provided
+    const { from, to, date } = req.query;
+    const query = {};
+    if (from) query.from = from;
+    if (to) query.to = to;
+    if (date) {
+      const d = new Date(date);
+      const start = new Date(d.setHours(0,0,0,0));
+      const end = new Date(d.setHours(23,59,59,999));
+      query.departureTime = { $gte: start, $lte: end };
+    }
+    const flights = await Flight.find(query).sort({ departureTime: 1 });
+    res.json(flights);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Get single flight
+const getFlight = async (req, res, next) => {
+  try {
+    const flight = await Flight.findById(req.params.id);
+    if (!flight) { res.status(404); throw new Error('Flight not found'); }
+    res.json(flight);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Update flight (admin)
+const updateFlight = async (req, res, next) => {
+  try {
+    const flight = await Flight.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!flight) { res.status(404); throw new Error('Flight not found'); }
+    res.json(flight);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Delete flight (admin)
+const deleteFlight = async (req, res, next) => {
+  try {
+    const flight = await Flight.findByIdAndDelete(req.params.id);
+    if (!flight) { res.status(404); throw new Error('Flight not found'); }
+    res.json({ message: 'Flight deleted' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { createFlight, listFlights, getFlight, updateFlight, deleteFlight };
+
+16) controllers/bookingController.js
+const Booking = require('../models/Booking');
+const Flight = require('../models/Flight');
+const sendMail = require('../utils/sendEmail');
+
+// Create booking (authenticated users)
+const createBooking = async (req, res, next) => {
+  try {
+    const user = req.user;
+    const { flightId, passengers } = req.body;
+    if (!flightId || !passengers || !Array.isArray(passengers) || passengers.length === 0) {
+      res.status(400);
+      throw new Error('flightId and passengers are required');
+    }
+
+    const flight = await Flight.findById(flightId);
+    if (!flight) { res.status(404); throw new Error('Flight not found'); }
+
+    // Calculate total price (simple: price * passenger count)
+    const totalPrice = flight.price * passengers.length;
+
+    // Create booking
+    const booking = await Booking.create({
+      user: user._id,
+      flight: flight._id,
+      passengers,
+      totalPrice,
+      status: 'CONFIRMED'
+    });
+
+    // Optionally reduce seats (one simple approach)
+    if (flight.seats >= passengers.length) {
+      flight.seats -= passengers.length;
+      await flight.save();
+    } else {
+      // not enough seats
+      res.status(400);
+      throw new Error('Not enough seats available');
+    }
+
+    // Send email confirmation (non-blocking)
+    try {
+      const subject = `Booking Confirmation - ${flight.flightNumber}`;
+      const text = `Hello ${user.name}, your booking is confirmed. Booking ID: ${booking._id}. Total: ${totalPrice}`;
+      await sendMail({ to: user.email, subject, text });
+    } catch (mailErr) {
+      console.warn('Email sending failed:', mailErr.message);
+      // Do not fail booking if email fails
+    }
+
+    const populated = await Booking.findById(booking._id).populate('flight').populate('user', '-password');
+    res.status(201).json(populated);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// List bookings for logged-in user, or all bookings for admin
+const listBookings = async (req, res, next) => {
+  try {
+    if (req.user.role === 'admin') {
+      const bookings = await Booking.find().populate('flight').populate('user', '-password');
+      return res.json(bookings);
+    }
+    const bookings = await Booking.find({ user: req.user._id }).populate('flight');
+    res.json(bookings);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Get single booking (owner or admin)
+const getBooking = async (req, res, next) => {
+  try {
+    const booking = await Booking.findById(req.params.id).populate('flight').populate('user', '-password');
+    if (!booking) { res.status(404); throw new Error('Booking not found'); }
+    if (req.user.role !== 'admin' && booking.user._id.toString() !== req.user._id.toString()) {
+      res.status(403); throw new Error('Forbidden');
+    }
+    res.json(booking);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Cancel booking (owner or admin)
+const cancelBooking = async (req, res, next) => {
+  try {
+    const booking = await Booking.findById(req.params.id).populate('flight');
+    if (!booking) { res.status(404); throw new Error('Booking not found'); }
+    if (req.user.role !== 'admin' && booking.user.toString() !== req.user._id.toString()) {
+      res.status(403); throw new Error('Forbidden');
+    }
+    booking.status = 'CANCELLED';
+    await booking.save();
+
+    // restore seats
+    const flight = await Flight.findById(booking.flight._id);
+    flight.seats += booking.passengers.length;
+    await flight.save();
+
+    res.json({ message: 'Booking cancelled', booking });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { createBooking, listBookings, getBooking, cancelBooking };
+
+17) routes/authRoutes.js
+const express = require('express');
+const { register, login } = require('../controllers/authController');
+const router = express.Router();
+
+router.post('/register', register);
+router.post('/login', login);
+
+module.exports = router;
+
+18) routes/flightRoutes.js
+const express = require('express');
+const {
+  createFlight, listFlights, getFlight, updateFlight, deleteFlight
+} = require('../controllers/flightController');
+const { protect } = require('../middleware/authMiddleware');
+const { permit } = require('../middleware/roleMiddleware');
+
+const router = express.Router();
+
+router.route('/')
+  .get(listFlights)         // public
+  .post(protect, permit('admin'), createFlight); // admin create
+
+router.route('/:id')
+  .get(getFlight)
+  .put(protect, permit('admin'), updateFlight)
+  .delete(protect, permit('admin'), deleteFlight);
+
+module.exports = router;
+
+19) routes/bookingRoutes.js
+const express = require('express');
+const { createBooking, listBookings, getBooking, cancelBooking } = require('../controllers/bookingController');
+const { protect } = require('../middleware/authMiddleware');
+
+const router = express.Router();
+
+router.route('/')
+  .post(protect, createBooking)
+  .get(protect, listBookings);
+
+router.route('/:id')
+  .get(protect, getBooking)
+  .delete(protect, cancelBooking);
+
+module.exports = router;
+
+🔧 How to install and run backend (exact steps)
+
+Open terminal and go to AirlineBookingApp/backend/
+
+Install packages:
+
+npm install
+# dev tool
+npm install --save-dev nodemon
+
+
+Create .env (copy from .env.example) and put your MongoDB Atlas connection and email creds.
+
+Start in development:
+
+npm run dev
+
+
+or production:
+
+npm start
+
+
+You should see:
+
+MongoDB Connected: cluster0-shard-00-00... 
+Server running on port 5000
+
+🧪 Quick API tests (Postman / curl)
+
+Register:
+
+POST http://localhost:5000/api/auth/register
+
+Body JSON: { "name":"Arun", "email":"a@b.com", "password":"123456" }
+
+Login:
+
+POST http://localhost:5000/api/auth/login
+
+Body JSON: { "email":"a@b.com", "password":"123456" }
+
+Response includes token — copy it.
+
+Create flight (admin - provide Bearer token from admin account):
+
+POST http://localhost:5000/api/flights
+
+Header: Authorization: Bearer <token>
+
+Body JSON: { "flightNumber":"AI101", "airline":"Air India", "from":"Chennai","to":"Bengaluru","departureTime":"2025-10-01T08:30:00Z","arrivalTime":"2025-10-01T10:00:00Z","seats":120,"price":2000 }
+
+List flights (public):
+
+GET http://localhost:5000/api/flights
+
+Create booking (user):
+
+POST http://localhost:5000/api/bookings
+
+Header: Authorization: Bearer <user-token>
+
+Body:
+
+{
+  "flightId": "<<flight id>>",
+  "passengers": [
+    { "name":"Arun", "age":25 },
+    { "name":"Keerthi", "age":23 }
+  ]
+}
+
+⚠️ Notes & Next steps
+
+Email delivery requires valid SMTP credentials. For local dev you can use Ethereal or Mailtrap to test without real email.
+
+Seat handling here is simple (decrement/increment). For concurrency in production, consider transactions or atomic updates.
+
+Passwords are hashed using bcrypt; tokens signed with JWT.
+
+Role-based middleware (permit('admin')) protects admin endpoints.
+
+If you’re happy with this backend, I’ll now:
+
+Generate the Angular standalone frontend files (login, signup, flight list/add, booking list/add) that call these endpoints and include production-ready SCSS.
+
+Show the exact frontend config (environment.ts base API URL, how to set tokens in headers, run commands).
+
+Shall I proceed to generate the frontend code now? (I’ll produce full component files, services, and run instructions.)

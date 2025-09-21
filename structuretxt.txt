@@ -1,0 +1,244 @@
+AirlineBookingApp/
+│
+├─ backend/
+│   ├─ controllers/
+│   │   ├─ authController.js
+│   │   ├─ bookingController.js
+│   │   └─ flightController.js
+│   │
+│   ├─ middleware/
+│   │   ├─ authMiddleware.js
+│   │   ├─ errorMiddleware.js
+│   │   └─ roleMiddleware.js
+│   │
+│   ├─ models/
+│   │   ├─ User.js
+│   │   ├─ Flight.js
+│   │   └─ Booking.js
+│   │
+│   ├─ routes/
+│   │   ├─ authRoutes.js
+│   │   ├─ flightRoutes.js
+│   │   └─ bookingRoutes.js
+│   │
+│   ├─ utils/
+|    |   ├─ sendEmail.js //after booking confirmation
+│   │   ├─ generateToken.js
+│   │   └─ validateInput.js
+│   │
+│   ├─ config/
+│   │   └─ db.js
+│   │
+│   ├─ node_modules/
+│   │   └─ ...
+│   ├─ package.json
+│   ├─ package-lock.json
+│   └─ server.js
+│
+├─ frontend/
+│   ├─ node_modules/
+│   │   └─ ...
+│   ├─ src/
+│   │   ├─ app/
+│   │   │   ├─ auth/
+│   │   │   │   ├─ login/
+│   │   │   │   │   ├─ login.component.html
+│   │   │   │   │   ├─ login.component.scss
+│   │   │   │   │   ├─ login.component.ts
+│   │   │   │   │   └─ login.component.spec.ts
+│   │   │   │   │
+│   │   │   │   ├─ signup/
+│   │   │   │   │   ├─ signup.component.html
+│   │   │   │   │   ├─ signup.component.scss
+│   │   │   │   │   ├─ signup.component.ts
+│   │   │   │   │   └─ signup.component.spec.ts
+│   │   │   │
+│   │   │   ├─ flights/
+│   │   │   │   ├─ flight-list/
+│   │   │   │   │   ├─ flight-list.component.html
+│   │   │   │   │   ├─ flight-list.component.scss
+│   │   │   │   │   ├─ flight-list.component.ts
+│   │   │   │   │   └─ flight-list.component.spec.ts
+│   │   │   │   │
+│   │   │   │   ├─ flight-add/
+│   │   │   │   │   ├─ flight-add.component.html
+│   │   │   │   │   ├─ flight-add.component.scss
+│   │   │   │   │   ├─ flight-add.component.ts
+│   │   │   │   │   └─ flight-add.component.spec.ts
+│   │   │   │
+│   │   │   ├─ bookings/
+│   │   │   │   ├─ booking-list/
+│   │   │   │   │   ├─ booking-list.component.html
+│   │   │   │   │   ├─ booking-list.component.scss
+│   │   │   │   │   ├─ booking-list.component.ts
+│   │   │   │   │   └─ booking-list.component.spec.ts
+│   │   │   │   │
+│   │   │   │   ├─ booking-add/
+│   │   │   │   │   ├─ booking-add.component.html
+│   │   │   │   │   ├─ booking-add.component.scss
+│   │   │   │   │   ├─ booking-add.component.ts
+│   │   │   │   │   └─ booking-add.component.spec.ts
+│   │   │   │
+│   │   │   ├─ services/
+│   │   │   │   ├─ auth.service.ts
+│   │   │   │   ├─ flight.service.ts
+│   │   │   │   └─ booking.service.ts
+│   │   │   │
+│   │   │   ├─ app.routes.ts
+│   │   │   └─ app.ts
+│   │   │
+│   │   ├─ assets/
+│   │   │   └─ ...
+│   │   ├─ environments/
+│   │   │   ├─ environment.ts
+│   │   │   └─ environment.prod.ts
+│   │   ├─ index.html
+│   │   └─ styles.scss
+│   │
+│   ├─ angular.json
+│   ├─ package.json
+│   └─ tsconfig.json
+│
+└─ README.md
+✅ Key Notes about this structure:
+
+Backend
+
+controllers → handles API logic
+
+middleware → auth, error handling, role-based access
+
+models → Mongoose models for User, Flight, Booking
+
+routes → API endpoints
+
+utils → helper functions (e.g., JWT token generation, input validation)
+
+config/db.js → MongoDB connection
+
+server.js → main Express server entry point
+
+Frontend
+
+app/ → main Angular app folder
+
+auth/ → contains login and signup folders with .html, .scss, .ts, .spec.ts
+
+flights/ → flight-list and flight-add components
+
+bookings/ → booking-list and booking-add components
+
+services/ → handles API communication
+
+app.routes.ts → all routing configurations
+
+app.ts → root standalone Angular component
+
+styles.scss → global styling
+
+environments/ → environment configs
+
+Spec.ts files are included for unit testing for each component.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+AirlineBookingApp/
+│
+├─ frontend/
+│   ├─ src/
+│   │   ├─ app/
+│   │   │   ├─ components/
+│   │   │   │   ├─ navbar/
+│   │   │   │   │   ├─ navbar.component.ts
+│   │   │   │   │   ├─ navbar.component.html
+│   │   │   │   │   └─ navbar.component.css
+│   │   │   │   ├─ footer/
+│   │   │   │   │   ├─ footer.component.ts
+│   │   │   │   │   ├─ footer.component.html
+│   │   │   │   │   └─ footer.component.css
+│   │   │   │   ├─ flight-card/
+│   │   │   │   │   ├─ flight-card.component.ts
+│   │   │   │   │   ├─ flight-card.component.html
+│   │   │   │   │   └─ flight-card.component.css
+│   │   │   │   └─ booking-form/
+│   │   │   │       ├─ booking-form.component.ts
+│   │   │   │       ├─ booking-form.component.html
+│   │   │   │       └─ booking-form.component.css
+│   │   │   │
+│   │   │   ├─ pages/
+│   │   │   │   ├─ auth/
+│   │   │   │   │   ├─ login/
+│   │   │   │   │   │   ├─ login.component.ts
+│   │   │   │   │   │   ├─ login.component.html
+│   │   │   │   │   │   └─ login.component.css
+│   │   │   │   │   └─ signup/
+│   │   │   │   │       ├─ signup.component.ts
+│   │   │   │   │       ├─ signup.component.html
+│   │   │   │   │       └─ signup.component.css
+│   │   │   │   ├─ flight-search/
+│   │   │   │   │   ├─ flight-search.component.ts
+│   │   │   │   │   ├─ flight-search.component.html
+│   │   │   │   │   └─ flight-search.component.css
+│   │   │   │   ├─ booking/
+│   │   │   │   │   ├─ booking.component.ts
+│   │   │   │   │   ├─ booking.component.html
+│   │   │   │   │   └─ booking.component.css
+│   │   │   │   ├─ user-dashboard/
+│   │   │   │   │   ├─ user-dashboard.component.ts
+│   │   │   │   │   ├─ user-dashboard.component.html
+│   │   │   │   │   └─ user-dashboard.component.css
+│   │   │   │   └─ admin-dashboard/
+│   │   │   │       ├─ admin-dashboard.component.ts
+│   │   │   │       ├─ admin-dashboard.component.html
+│   │   │   │       └─ admin-dashboard.component.css
+│   │   │   │
+│   │   │   ├─ services/
+│   │   │   │   ├─ auth.service.ts
+│   │   │   │   ├─ flight.service.ts
+│   │   │   │   ├─ booking.service.ts
+│   │   │   │   └─ token-interceptor.service.ts
+│   │   │   │
+│   │   │   ├─ guards/
+│   │   │   │   └─ auth.guard.ts
+│   │   │   │
+│   │   │   ├─ models/
+│   │   │   │   ├─ user.model.ts
+│   │   │   │   ├─ flight.model.ts
+│   │   │   │   └─ booking.model.ts
+│   │   │   │
+│   │   │   ├─ app-routing.module.ts
+│   │   │   ├─ app.module.ts
+│   │   │   └─ app.component.ts
+│   │   │
+│   │   ├─ assets/
+│   │   │   └─ styles.css
+│   │   └─ environments/
+│   │       ├─ environment.ts
+│   │       └─ environment.prod.ts
+│   │
+│   ├─ angular.json
+│   ├─ package.json
+│   └─ tsconfig.json
